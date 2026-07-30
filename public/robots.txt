@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Bloquear el rastreo de la página de contacto para ahorrar recursos
+Disallow: /contact

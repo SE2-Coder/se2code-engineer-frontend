@@ -1,0 +1,290 @@
+---
+// Componente Formulario de Contacto con Turnstile - Tema DevOps Dark
+---
+
+<form id="contact-form" class="contact-form">
+  <div class="form-group">
+    <label for="name">Nombre</label>
+    <input type="text" id="name" name="name" required placeholder="Ej: devops_engineer" />
+  </div>
+
+  <div class="form-group">
+    <label for="email">Correo Electrónico</label>
+    <input type="email" id="email" name="email" required placeholder="tu@email.com" />
+  </div>
+
+  <div class="form-group">
+    <label for="message">Mensaje</label>
+    <textarea id="message" name="message" rows="5" required placeholder="Describe tu proyecto o consulta técnica..."></textarea>
+  </div>
+
+  <!-- Cloudflare Turnstile Widget - Ancho completo -->
+  <div class="form-group turnstile-wrapper">
+    <label class="turnstile-label">Verificación de Seguridad</label>
+    <!-- ⚠️ REEMPLAZA "0x4AAAAAAD6z1pwdelftBsqL" con tu Site Key real de Cloudflare (empieza con 0x4...) -->
+    <div class="cf-turnstile" 
+         data-sitekey="0x4AAAAAAD6z1pwdelftBsqL" 
+         data-callback="onTurnstileSuccess"
+         data-theme="dark"
+         data-size="flexible">
+    </div>
+    <input type="hidden" id="turnstile-token" name="turnstileToken" />
+  </div>
+
+  <button type="submit" class="btn-submit" id="submit-btn" disabled>
+    <span class="btn-text">Enviar Mensaje</span>
+    <span class="btn-loading" style="display: none;">Enviando...</span>
+  </button>
+
+  <div id="form-status" class="form-status"></div>
+</form>
+
+<!-- Cargar script de Turnstile -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
+<script is:inline>
+  window.onTurnstileSuccess = function(token) {
+    document.getElementById('turnstile-token').value = token;
+    document.getElementById('submit-btn').disabled = false;
+  };
+
+  document.getElementById('contact-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const form = e.target;
+    const submitBtn = document.getElementById('submit-btn');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const btnLoading = submitBtn.querySelector('.btn-loading');
+    const statusDiv = document.getElementById('form-status');
+    const turnstileToken = document.getElementById('turnstile-token').value;
+
+    if (!turnstileToken) {
+      statusDiv.textContent = 'Por favor, completa la verificación de seguridad.';
+      statusDiv.className = 'form-status error';
+      statusDiv.style.display = 'block';
+      submitBtn.disabled = false;
+      btnText.style.display = 'inline';
+      btnLoading.style.display = 'none';
+      return;
+    }
+
+    submitBtn.disabled = true;
+    btnText.style.display = 'none';
+    btnLoading.style.display = 'inline';
+    statusDiv.textContent = '';
+    statusDiv.className = 'form-status';
+    statusDiv.style.display = 'none';
+
+    const formData = {
+      name: form.name.value,       // ✅ CORREGIDO: ahora envía 'name' (no 'nombre')
+      email: form.email.value,
+      message: form.message.value,
+      turnstileToken: turnstileToken
+    };
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        statusDiv.textContent = result.message;
+        statusDiv.className = 'form-status success';
+        statusDiv.style.display = 'block';
+        form.reset();
+        
+        if (window.turnstile) {
+          window.turnstile.reset();
+        }
+        document.getElementById('turnstile-token').value = '';
+        submitBtn.disabled = true;
+      } else {
+        statusDiv.textContent = result.error || 'Error al enviar el mensaje.';
+        statusDiv.className = 'form-status error';
+        statusDiv.style.display = 'block';
+        
+        if (window.turnstile) {
+          window.turnstile.reset();
+        }
+        submitBtn.disabled = false;
+      }
+    } catch (error) {
+      statusDiv.textContent = 'Error de conexión. Intenta de nuevo.';
+      statusDiv.className = 'form-status error';
+      statusDiv.style.display = 'block';
+      submitBtn.disabled = false;
+    } finally {
+      btnText.style.display = 'inline';
+      btnLoading.style.display = 'none';
+    }
+  });
+</script>
+
+<style>
+  .contact-form {
+    max-width: 600px;
+    width: 100%;
+    margin: 0 auto;
+    background: var(--bg-card, #1f1f23);
+    padding: 2.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--border, #27272a);
+    position: relative;
+    z-index: 1;
+    box-sizing: border-box;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--primary, #00ff88);
+    font-weight: 600;
+    font-size: 0.9rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .form-group input,
+  .form-group textarea {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    background: var(--bg, #0a0a0a);
+    border: 1px solid var(--border, #27272a);
+    border-radius: 8px;
+    color: var(--text, #e4e4e7);
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    transition: all 0.3s;
+    box-sizing: border-box;
+  }
+
+  .form-group input:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary, #00ff88);
+    box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.1);
+  }
+
+  /* Turnstile con label y ancho completo */
+  .turnstile-wrapper {
+    margin-bottom: 1.5rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .turnstile-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--primary, #00ff88);
+    font-weight: 600;
+    font-size: 0.9rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .turnstile-container {
+    width: 100%;
+    min-height: 65px;
+    padding: 0.75rem 1rem;
+    background: var(--bg, #0a0a0a);
+    border: 1px solid var(--border, #27272a);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    overflow: hidden; /* �� CLAVE: evita que el iframe se salga */
+  }
+
+  /* Forzar que el widget de Turnstile ocupe todo el ancho sin desbordarse */
+  .turnstile-container :global(.cf-turnstile),
+  .turnstile-container :global(iframe) {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 65px !important;
+    overflow: hidden !important;
+  }
+
+  .btn-submit {
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, var(--primary, #00ff88) 0%, var(--primary-dark, #00cc6a) 100%);
+    color: var(--bg, #0a0a0a);
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: 'JetBrains Mono', monospace;
+    box-sizing: border-box;
+  }
+
+  .btn-submit:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 255, 136, 0.3);
+  }
+
+  .btn-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--border, #27272a);
+    color: var(--text-light, #a1a1aa);
+  }
+
+  .form-status {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 600;
+    display: none;
+    box-sizing: border-box;
+  }
+
+  .form-status.success {
+    display: block;
+    background: rgba(0, 255, 136, 0.1);
+    border: 1px solid var(--primary, #00ff88);
+    color: var(--primary, #00ff88);
+  }
+
+  .form-status.error {
+    display: block;
+    background: rgba(255, 95, 86, 0.1);
+    border: 1px solid #ff5f56;
+    color: #ff5f56;
+  }
+
+  /* 📱 RESPONSIVE: Ajustes para móvil */
+  @media (max-width: 640px) {
+    .contact-form {
+      padding: 1.5rem;
+      border-radius: 8px;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      padding: 0.75rem;
+      font-size: 0.95rem;
+    }
+
+    .turnstile-container {
+      padding: 0.5rem;
+      min-height: 70px;
+    }
+
+    .btn-submit {
+      padding: 0.875rem;
+      font-size: 0.95rem;
+    }
+  }
+</style>

@@ -1,0 +1,241 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ContactForm from '../components/ContactForm.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout title="Contacto - Se2Code" description="Ponte en contacto con nosotros para proyectos, colaboraciones o dudas sobre ingeniería de software." noindex={true}>
+  <main class="contact-page">
+    <!-- Animaciones de fondo -->
+    <div class="contact-bg-decoration">
+      <div class="circuit-lines"></div>
+      <div class="glow-orb orb-1"></div>
+      <div class="glow-orb orb-2"></div>
+      <div class="glow-orb orb-3"></div>
+      
+      <!-- Terminal de código corriendo -->
+      <div class="terminal-output">
+        <div class="terminal-line">
+          <span class="prompt">$</span>
+          <span class="command">kubectl apply -f contact_form.yaml</span>
+        </div>
+        <div class="terminal-line success">✓ ContactForm deployed successfully</div>
+        <div class="terminal-line">
+          <span class="prompt">$</span>
+          <span class="command">docker build -t se2code-frontend .</span>
+        </div>
+        <div class="terminal-line">Sending build context to Docker daemon  212.3MB</div>
+        <div class="terminal-line">Step 1/15 : FROM node:22-alpine</div>
+        <div class="terminal-line success">✓ Build completed</div>
+        <div class="terminal-line">
+          <span class="prompt">$</span>
+          <span class="command">npm run build</span>
+        </div>
+        <div class="terminal-line">[@astrojs/node] Building server...</div>
+        <div class="terminal-line success">✓ Server ready</div>
+        <div class="terminal-line">
+          <span class="prompt">$</span>
+          <span class="command">git push origin main</span>
+        </div>
+        <div class="terminal-line">Enumerating objects: 15, done.</div>
+        <div class="terminal-line">Counting objects: 100% (15/15), done.</div>
+        <div class="terminal-line success">✓ Deployment complete</div>
+        <div class="terminal-line">
+          <span class="prompt">$</span>
+          <span class="command">systemctl status nginx</span>
+        </div>
+        <div class="terminal-line">● nginx.service - A high performance web server</div>
+        <div class="terminal-line">   Loaded: loaded (/lib/systemd/system/nginx.service)</div>
+        <div class="terminal-line success">   Active: active (running)</div>
+      </div>
+    </div>
+
+    <div class="container">
+      <header class="page-header">
+        <h1 class="page-title">
+          <span class="prompt">$</span> init_contact.sh
+        </h1>
+        <p class="page-subtitle">¿Tienes un proyecto en mente o una duda técnica? Envía un mensaje y te responderemos a la velocidad de la luz.</p>
+      </header>
+
+      <ContactForm />
+    </div>
+  </main>
+  
+</Layout>
+
+<style>
+  .contact-page {
+    padding: 6rem 0;
+    min-height: 80vh;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Fondo decorativo animado */
+  .contact-bg-decoration {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  /* Líneas de circuito animadas */
+  .circuit-lines {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      linear-gradient(90deg, var(--primary, #00ff88) 1px, transparent 1px),
+      linear-gradient(var(--primary, #00ff88) 1px, transparent 1px);
+    background-size: 100px 100px;
+    opacity: 0.03;
+    animation: circuitMove 60s linear infinite;
+  }
+
+  @keyframes circuitMove {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(100px, 100px); }
+  }
+
+  /* Orbes brillantes flotantes */
+  .glow-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.15;
+    animation: float 20s ease-in-out infinite;
+  }
+
+  .orb-1 {
+    width: 400px;
+    height: 400px;
+    background: var(--primary, #00ff88);
+    top: 10%;
+    left: -10%;
+    animation-delay: 0s;
+  }
+
+  .orb-2 {
+    width: 500px;
+    height: 500px;
+    background: var(--secondary, #61dafb);
+    bottom: 10%;
+    right: -10%;
+    animation-delay: -10s;
+  }
+
+  .orb-3 {
+    width: 300px;
+    height: 300px;
+    background: var(--accent, #ff0080);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation-delay: -5s;
+    opacity: 0.1;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(30px, -30px); }
+  }
+
+  /* Terminal de código corriendo */
+  .terminal-output {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 2rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text-light, #a1a1aa);
+    overflow: hidden;
+    opacity: 0.4;
+    animation: scrollTerminal 30s linear infinite;
+  }
+
+  .terminal-line {
+    margin-bottom: 0.5rem;
+    white-space: nowrap;
+    animation: fadeIn 0.3s ease-in;
+  }
+
+  .terminal-line .prompt {
+    color: var(--primary, #00ff88);
+    margin-right: 0.5rem;
+  }
+
+  .terminal-line .command {
+    color: var(--text, #e4e4e7);
+  }
+
+  .terminal-line.success {
+    color: var(--primary, #00ff88);
+    margin-left: 1.5rem;
+  }
+
+  @keyframes scrollTerminal {
+    0% {
+      transform: translateY(0);
+    }
+    100% {
+      transform: translateY(-50%);
+    }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 4rem;
+    animation: fadeInUp 0.8s ease-out;
+  }
+
+  .page-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--text, #e4e4e7);
+    margin-bottom: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .page-title .prompt {
+    color: var(--primary, #00ff88);
+  }
+
+  .page-subtitle {
+    font-size: 1.125rem;
+    color: var(--text-light, #a1a1aa);
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>

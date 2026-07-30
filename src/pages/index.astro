@@ -1,0 +1,27 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Hero from '../components/Hero.astro';
+import Features from '../components/Features.astro';
+import Articles from '../components/Articles.astro';
+import Footer from '../components/Footer.astro';
+
+const DIRECTUS_URL = 'http://172.26.3.43:8055';
+let posts: any[] = [];
+
+try {
+  const response = await fetch(`${DIRECTUS_URL}/items/posts?fields=*,fecha_publicacion,image_alt&limit=10`);
+  if (response.ok) {
+    const result = await response.json();
+    posts = result.data || [];
+  }
+} catch (error) {
+  console.error('Error al obtener posts:', error);
+}
+---
+
+<Layout title="Se2Code - Blog de Ingeniería de Software">
+  <Hero />
+  <Features />
+  <Articles posts={posts} />
+
+</Layout>

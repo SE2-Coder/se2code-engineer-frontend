@@ -1,0 +1,129 @@
+---
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+  canonical?: string;
+  keywords?: string;
+  noindex?: boolean;
+  article?: {
+    publishedTime?: string;
+    modifiedTime?: string;
+    author?: string;
+    type?: string;
+  };
+}
+
+const { 
+  title, 
+  description = "Se2Code - Blog de Ingeniería de Software especializado en arquitectura, DevOps y desarrollo", 
+  image,
+  canonical,
+  keywords,
+  noindex = false,
+  article
+} = Astro.props;
+
+// Lee la variable de entorno inyectada por K8s, o usa el fallback por seguridad
+const siteUrl = process.env.SITE_URL || "https://se2code.engineer";
+const currentUrl = canonical || Astro.url.href;
+
+// DEBUG: Ver qué valor llega al Layout
+console.log('=== LAYOUT SEO DEBUG ===');
+console.log('noindex prop:', noindex);
+console.log('noindex type:', typeof noindex);
+console.log('noindex === true:', noindex === true);
+console.log('========================');
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- SEO Básico -->
+    <title>{title}</title>
+    <meta name="title" content={title} />
+    <meta name="description" content={description} />
+    {keywords && <meta name="keywords" content={keywords} />}
+    <meta name="author" content="Se2Code" />
+    <meta name="robots" content={noindex === true ? "noindex, nofollow" : "index, follow"} />
+    {canonical && <link rel="canonical" href={currentUrl} />}
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content={article ? "article" : "website"} />
+    <meta property="og:url" content={currentUrl} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    {image && <meta property="og:image" content={image} />}
+    <meta property="og:locale" content="es_ES" />
+    <meta property="og:site_name" content="Se2Code" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content={currentUrl} />
+    <meta property="twitter:title" content={title} />
+    <meta property="twitter:description" content={description} />
+    {image && <meta property="twitter:image" content={image} />}
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    
+    {article && (
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": article.type || "Article",
+          "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": currentUrl
+          },
+          "headline": title,
+          "description": description,
+          "image": image,
+          "datePublished": article.publishedTime,
+          "dateModified": article.modifiedTime,
+          "author": {
+            "@type": "Person",
+            "name": article.author || "Se2Code Team"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Se2Code",
+            "logo": {
+              "@type": "ImageObject",
+              "url": `${siteUrl}/logo.png`
+            }
+          }
+        })}
+      </script>
+    )}
+  </head>
+  <body>
+    <Header />
+    <main class="site-main">
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>
+
+<style>
+  .site-main {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding-top: 80px;
+  }
+  
+  @media (max-width: 768px) {
+    .site-main {
+      padding-top: 75px !important;
+    }
+  }
+</style>

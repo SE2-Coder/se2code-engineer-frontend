@@ -1,0 +1,630 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { marked } from 'marked';
+
+const { path } = Astro.params;
+
+if (!path || path === '') {
+  return Astro.redirect('/');
+}
+
+// Lee de las variables de entorno de Node.js (inyectadas por K8s). 
+// El '||' es un fallback de seguridad para que tu docker-compose actual no se rompa.
+const DIRECTUS_API_URL = process.env.DIRECTUS_API_URL || 'http://172.26.3.43:8055';
+const DIRECTUS_PUBLIC_URL = process.env.DIRECTUS_PUBLIC_URL || 'https://staging.se2code.engineer';
+const SITE_URL = process.env.SITE_URL || 'https://se2code.engineer';
+
+const CATEGORIAS_VALIDAS = ['tutoriales', 'arquitectura', 'devops', 'proyectos', 'reviews'];
+
+let contenido = null;
+let tipo = null;
+
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+});
+
+// Consulta de categorías
+if (CATEGORIAS_VALIDAS.includes(path.toLowerCase())) {
+  tipo = 'categoria';
+  const response = await fetch(`${DIRECTUS_API_URL}/items/posts?filter[category][_eq]=${path}&fields=*,image.id,fecha_publicacion,image_alt&limit=50`);
+
+  if (response.ok) {
+    const result = await response.json();
+    contenido = result.data || [];
+  }
+}
+
+// Consulta de posts individuales (con campos SEO)
+if (!contenido) {
+  tipo = 'post';
+  const response = await fetch(`${DIRECTUS_API_URL}/items/posts?filter[slug][_eq]=${path}&fields=*,image.id,image_position,fecha_publicacion,image_alt,seo_title,seo_description,seo_keywords,canonical_url,og_image,noindex,article_type,date_updated&limit=1`);
+  
+  if (response.ok) {
+    const result = await response.json();
+    contenido = result.data[0] || null;
+  }
+}
+
+if (!contenido || (tipo === 'post' && !contenido) || (tipo === 'categoria' && contenido.length === 0)) {
+  return Astro.redirect('/');
+}
+
+function formatearFecha(post) {
+  const fecha = post.fecha_publicacion;
+  
+  if (!fecha) return 'Fecha no disponible';
+  
+  try {
+    const date = new Date(fecha);
+    if (isNaN(date.getTime())) return 'Fecha no disponible';
+    return date.toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } catch {
+    return 'Fecha no disponible';
+  }
+}
+
+function capitalizar(texto) {
+  if (!texto) return '';
+  return texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase();
+}
+
+function obtenerImagenUrl(imageField) {
+  if (!imageField) return null;
+  if (typeof imageField === 'object' && imageField.id) {
+    return `${DIRECTUS_PUBLIC_URL}/assets/${imageField.id}`;
+  }
+  if (typeof imageField === 'string') {
+    return `${DIRECTUS_PUBLIC_URL}/assets/${imageField}`;
+  }
+  return null;
+}
+
+// FIX: Función robusta para normalizar booleanos de Directus
+function esVerdadero(valor) {
+  if (valor === true || valor === 1) return true;
+  if (typeof valor === 'string' && valor.toLowerCase() === 'true') return true;
+  return false;
+}
+
+const htmlContent = marked.parse(contenido.content || '');
+const imageUrl = obtenerImagenUrl(contenido.image);
+const imagePosition = contenido.image_position || 'top';
+
+// Preparar datos SEO
+const currentUrl = contenido.canonical_url 
+  ? `${SITE_URL}${contenido.canonical_url}` 
+  : `${SITE_URL}/${path}`;
+
+const seoTitle = contenido.seo_title || `${contenido.title} - Se2Code`;
+const seoDescription = contenido.seo_description || contenido.excerpt || "Artículo de Se2Code sobre ingeniería de software.";
+const seoImage = obtenerImagenUrl(contenido.og_image || contenido.image) || `${SITE_URL}/og-default.jpg`;
+const seoKeywords = contenido.seo_keywords || "";
+
+// FIX: Usar la función de normalización para el noindex
+const isNoindex = esVerdadero(contenido.noindex);
+
+// DEBUG: Ver qué valor tiene noindex
+console.log('=== PATH.ASTRO DEBUG ===');
+console.log('contenido.noindex:', contenido.noindex);
+console.log('typeof contenido.noindex:', typeof contenido.noindex);
+console.log('isNoindex:', isNoindex);
+console.log('========================');
+---
+
+{tipo === 'categoria' && (
+  <Layout 
+    title={`Categoría: ${capitalizar(path)} - Se2Code`} 
+    description={`Artículos sobre ${capitalizar(path)} en Se2Code. Descubre tutoriales, arquitectura y proyectos.`}
+    canonical={`${SITE_URL}/${path}`}
+  >
+    <main class="category-page">
+      <div class="container">
+        <header class="page-header">
+          <h1 class="page-title"><span class="prompt">$</span> ls ./posts --category={path}</h1>
+          <p class="page-subtitle">Mostrando {contenido.length} artículo{contenido.length !== 1 ? 's' : ''} en "{capitalizar(path)}"</p>
+        </header>
+
+        <div class="articles-grid">
+          {contenido.map((post) => {
+            const postImageUrl = obtenerImagenUrl(post.image);
+            return (
+              <article class="article-card">
+                {postImageUrl && (
+                  <div class="article-image">
+                    <img 
+                      src={postImageUrl} 
+                      alt={post.image_alt || post.title}
+                      loading="lazy"
+                    />
+                    <div class="image-overlay"></div>
+                  </div>
+                )}
+                <div class="article-card-content">
+                  {post.category && (
+                    <span class="badge">{capitalizar(post.category)}</span>
+                  )}
+                  <h3><a href={`/${post.slug}`}>{post.title}</a></h3>
+                  <p class="excerpt">{post.excerpt}</p>
+                  <div class="card-footer">
+                    <time>{formatearFecha(post)}</time>
+                    <a href={`/${post.slug}`} class="read-more">Leer →</a>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+    </main>
+  </Layout>
+)}
+
+{tipo === 'post' && (
+  <Layout 
+    title={seoTitle}
+    description={seoDescription}
+    image={seoImage}
+    canonical={currentUrl}
+    keywords={seoKeywords}
+    noindex={isNoindex}
+    article={{
+      publishedTime: contenido.fecha_publicacion,
+      modifiedTime: contenido.date_updated || contenido.fecha_publicacion,
+      author: "Se2Code Team",
+      type: contenido.article_type || "Article"
+    }}
+  >
+    <main class="article-page">
+      <div class="article-wrapper">
+        <article class="article-single-content" itemscope itemtype="https://schema.org/Article">
+          <meta itemprop="headline" content={contenido.title} />
+          <meta itemprop="description" content={seoDescription} />
+          <meta itemprop="datePublished" content={contenido.fecha_publicacion} />
+          {contenido.date_updated && <meta itemprop="dateModified" content={contenido.date_updated} />}
+          
+          {imageUrl && imagePosition === 'top' && (
+            <div class="article-header-image">
+              <img 
+                src={imageUrl} 
+                alt={contenido.image_alt || contenido.title}
+                loading="lazy"
+                itemprop="image"
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
+            </div>
+          )}
+          
+          <header>
+            <h1>{contenido.title}</h1>
+            <div class="meta">
+              <time datetime={contenido.fecha_publicacion}>{formatearFecha(contenido)}</time>
+              {contenido.category && (
+                <a href={`/${contenido.category.toLowerCase()}`} class="badge" itemprop="articleSection">
+                  {capitalizar(contenido.category)}
+                </a>
+              )}
+            </div>
+          </header>
+          
+          <div class="markdown-content" itemprop="articleBody" set:html={htmlContent}></div>
+          
+          {imageUrl && imagePosition === 'bottom' && (
+            <div class="article-footer-image">
+              <img 
+                src={imageUrl} 
+                alt={contenido.image_alt || contenido.title}
+                loading="lazy"
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
+            </div>
+          )}
+        </article>
+      </div>
+    </main>
+  </Layout>
+)}
+
+<style>
+  .category-page, .article-page {
+    padding: 6rem 2rem;
+    min-height: 80vh;
+    overflow-x: hidden;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .container, .article-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 4rem;
+  }
+
+  .page-title {
+    font-size: 2.5rem;
+    color: var(--text, #e4e4e7);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 1rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.2;
+  }
+
+  .page-title .prompt {
+    color: var(--primary, #00ff88);
+  }
+
+  .page-subtitle {
+    color: var(--text-light, #a1a1aa);
+    font-size: 1.125rem;
+    word-wrap: break-word;
+  }
+
+  .articles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 2.5rem;
+  }
+
+  .article-card {
+    background: var(--bg-card, #1f1f23);
+    border: 1px solid var(--border, #27272a);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    width: 100%;
+  }
+
+  .article-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary, #00ff88), var(--secondary, #61dafb));
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .article-card:hover {
+    border-color: var(--primary, #00ff88);
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 255, 136, 0.15);
+  }
+
+  .article-card:hover::before {
+    opacity: 1;
+  }
+
+  .article-image {
+    height: 240px;
+    overflow: hidden;
+    position: relative;
+    background-color: var(--bg, #0a0a0a);
+    width: 100%;
+  }
+
+  .article-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 100%;
+  }
+
+  .article-card:hover .article-image img {
+    transform: scale(1.08);
+  }
+
+  .image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(10, 10, 10, 0.8) 100%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .article-card:hover .image-overlay {
+    opacity: 1;
+  }
+
+  .article-card-content {
+    padding: 2.5rem 2rem 2rem 2rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    gap: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 0.35rem 0.85rem;
+    background: rgba(0, 255, 136, 0.1);
+    border: 1px solid var(--primary, #00ff88);
+    border-radius: 20px;
+    color: var(--primary, #00ff88);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    width: fit-content;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .article-card-content h3 {
+    margin: 0;
+    font-size: 1.4rem;
+    line-height: 1.3;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .article-card-content h3 a {
+    color: var(--text, #e4e4e7);
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+
+  .article-card-content h3 a:hover {
+    color: var(--primary, #00ff88);
+  }
+
+  .excerpt {
+    color: var(--text-light, #a1a1aa);
+    line-height: 1.6;
+    margin: 0;
+    flex-grow: 1;
+    word-wrap: break-word;
+  }
+
+  .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border, #27272a);
+    margin-top: 0.5rem;
+    gap: 1rem;
+  }
+
+  .card-footer time {
+    color: var(--text-light, #a1a1aa);
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
+  .read-more {
+    color: var(--primary, #00ff88);
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: transform 0.3s;
+    white-space: nowrap;
+  }
+
+  .read-more:hover {
+    text-decoration: underline;
+  }
+
+  .article-card:hover .read-more {
+    transform: translateX(5px);
+  }
+
+  .article-single-content {
+    padding: 0;
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .article-header-image,
+  .article-footer-image {
+    height: 400px;
+    margin: 2rem 0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    background-color: var(--bg, #0a0a0a);
+    width: 100%;
+  }
+
+  .article-header-image img,
+  .article-footer-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    max-width: 100%;
+  }
+
+  .article-single-content header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .article-single-content h1 {
+    font-size: 2.5rem;
+    color: var(--text, #e4e4e7);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 1.5rem;
+    line-height: 1.2;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .meta {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    color: var(--text-light, #a1a1aa);
+    font-size: 0.9rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border, #27272a);
+    flex-wrap: wrap;
+  }
+
+  :global(.markdown-content) {
+    color: var(--text, #e4e4e7);
+    font-size: 1.1rem;
+    line-height: 1.8;
+    width: 100%;
+    overflow-wrap: break-word;
+  }
+
+  :global(.markdown-content h2) {
+    color: var(--primary, #00ff88);
+    font-size: 2rem;
+    margin: 3rem 0 1.5rem 0;
+    font-family: 'JetBrains Mono', monospace;
+    word-wrap: break-word;
+  }
+
+  :global(.markdown-content h3) {
+    color: var(--primary, #00ff88);
+    font-size: 1.5rem;
+    margin: 2.5rem 0 1rem 0;
+    font-family: 'JetBrains Mono', monospace;
+    word-wrap: break-word;
+  }
+
+  :global(.markdown-content p) {
+    margin: 0 0 1.5rem 0;
+  }
+
+  :global(.markdown-content pre) {
+    background: #111114;
+    border: 1px solid var(--border, #27272a);
+    border-radius: 8px;
+    padding: 1.5rem;
+    overflow-x: auto;
+    margin: 2rem 0;
+    display: block;
+    max-width: 100%;
+  }
+
+  :global(.markdown-content pre code) {
+    background: transparent;
+    color: var(--text, #e4e4e7);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9em;
+    padding: 0;
+    white-space: pre;
+    word-wrap: normal;
+  }
+
+  :global(.markdown-content code) {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--primary, #00ff88);
+    font-size: 0.9em;
+    word-break: break-all;
+  }
+
+  :global(.markdown-content blockquote) {
+    border-left: 4px solid var(--primary, #00ff88);
+    padding-left: 1.5rem;
+    margin: 2rem 0;
+    color: var(--text-light, #a1a1aa);
+    font-style: italic;
+  }
+
+  :global(.markdown-content ul),
+  :global(.markdown-content ol) {
+    margin: 1.5rem 0;
+    padding-left: 2rem;
+  }
+
+  :global(.markdown-content li) {
+    margin-bottom: 0.75rem;
+  }
+
+  :global(.markdown-content strong) {
+    color: var(--primary, #00ff88);
+    font-weight: 600;
+  }
+
+  :global(.markdown-content a) {
+    color: var(--secondary, #61dafb);
+    text-decoration: underline;
+    word-break: break-word;
+  }
+
+  :global(.markdown-content hr) {
+    border: none;
+    border-top: 1px solid var(--border, #27272a);
+    margin: 3rem 0;
+  }
+
+  @media (max-width: 768px) {
+    .category-page, .article-page {
+      padding: 7rem 1rem 4rem 1rem !important;
+    }
+
+    .articles-grid {
+      grid-template-columns: 1fr !important;
+      gap: 2rem;
+    }
+
+    .article-card {
+      width: 100% !important;
+      max-width: 100%;
+      display: flex !important;
+      flex-direction: column !important;
+    }
+
+    .article-image {
+      height: 220px;
+      width: 100%;
+    }
+
+    .article-card-content {
+      padding: 1.5rem !important;
+      width: 100%;
+    }
+
+    .page-title {
+      font-size: 1.6rem;
+      word-break: break-word;
+    }
+
+    .article-single-content h1 {
+      font-size: 1.8rem;
+    }
+
+    .article-header-image,
+    .article-footer-image {
+      height: 250px;
+    }
+
+    :global(.markdown-content h2) {
+      font-size: 1.5rem;
+    }
+    
+    :global(.markdown-content pre) {
+      padding: 1rem;
+      font-size: 0.85rem;
+    }
+  }
+</style>

@@ -1,0 +1,299 @@
+---
+// Componente Hero - Terminal DevOps con typing animation
+---
+
+<section class="hero">
+  <div class="hero-background">
+    <div class="grid-overlay"></div>
+    <div class="particles"></div>
+  </div>
+  
+  <div class="container">
+    <div class="hero-content">
+      <div class="hero-text fade-in-up">
+        <div class="terminal-badge">
+          <span class="terminal-dot"></span>
+          <span>Terminal activa</span>
+        </div>
+        
+        <h1>
+          <span class="typing-text">Deploy. Scale. Automate.</span>
+        </h1>
+        
+        <p class="hero-subtitle">
+          Ingeniería de software moderna para construir sistemas que escalan. 
+          DevOps, Cloud, Microservicios y más.
+        </p>
+        
+        <div class="hero-buttons">
+          <a href="#articles" class="btn btn-primary">
+            <span>Ver Artículos</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+      
+      <div class="hero-terminal slide-in-right">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+          </div>
+          <span class="terminal-title">se2code@devops:~$</span>
+        </div>
+        <div class="terminal-body">
+          <div class="terminal-line">
+            <span class="prompt">$</span>
+            <span class="command">docker compose up -d</span>
+          </div>
+          <div class="terminal-output">
+            <span class="success">✓</span> Container se2code-payload Started
+          </div>
+          <div class="terminal-output">
+            <span class="success">✓</span> Container se2code-postgres Started
+          </div>
+          <div class="terminal-output">
+            <span class="success">✓</span> Container se2code-minio Started
+          </div>
+          <div class="terminal-line">
+            <span class="prompt">$</span>
+            <span class="command typing-cursor">kubectl get pods_</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    min-height: 90vh;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    padding: 4rem 0;
+  }
+
+  .hero-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(ellipse at top, rgba(0, 255, 136, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom, rgba(97, 218, 251, 0.1) 0%, transparent 50%);
+  }
+
+  .grid-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      linear-gradient(rgba(0, 255, 136, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 255, 136, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: gridMove 20s linear infinite;
+  }
+
+  @keyframes gridMove {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(50px, 50px); }
+  }
+
+  .particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: radial-gradient(circle, var(--primary) 1px, transparent 1px);
+    background-size: 100px 100px;
+    opacity: 0.1;
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+  }
+
+  .hero-text {
+    animation: fadeInUp 0.8s ease-out;
+  }
+
+  .terminal-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(0, 255, 136, 0.1);
+    border: 1px solid var(--primary);
+    border-radius: 20px;
+    font-size: 0.875rem;
+    color: var(--primary);
+    margin-bottom: 2rem;
+    animation: glow 2s ease-in-out infinite;
+  }
+
+  .terminal-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--primary);
+    border-radius: 50%;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .hero h1 {
+    font-size: 4rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .typing-text {
+    display: inline-block;
+    border-right: 3px solid var(--primary);
+    animation: blink 1s step-end infinite;
+  }
+
+  .hero-subtitle {
+    font-size: 1.25rem;
+    color: var(--text-light);
+    margin-bottom: 2.5rem;
+    line-height: 1.7;
+    max-width: 500px;
+  }
+
+  .hero-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .hero-buttons .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* Terminal */
+  .hero-terminal {
+    background: var(--bg-card);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px var(--glow);
+    border: 1px solid var(--border);
+    animation: slideInRight 0.8s ease-out, glow 3s ease-in-out infinite;
+  }
+
+  .terminal-header {
+    background: var(--bg-alt);
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .terminal-dots {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  .dot.red { background: #ff5f56; }
+  .dot.yellow { background: #ffbd2e; }
+  .dot.green { background: #27c93f; }
+
+  .terminal-title {
+    font-size: 0.875rem;
+    color: var(--text-light);
+    font-family: inherit;
+  }
+
+  .terminal-body {
+    padding: 1.5rem;
+    font-size: 0.9rem;
+    line-height: 1.8;
+  }
+
+  .terminal-line {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .prompt {
+    color: var(--primary);
+    font-weight: 700;
+  }
+
+  .command {
+    color: var(--text);
+  }
+
+  .terminal-output {
+    padding-left: 1.5rem;
+    color: var(--text-light);
+    margin-bottom: 0.5rem;
+  }
+
+  .success {
+    color: var(--primary);
+    font-weight: 700;
+  }
+
+  .typing-cursor {
+    border-right: 2px solid var(--primary);
+    animation: blink 1s step-end infinite;
+  }
+
+  @media (max-width: 968px) {
+    .hero-content {
+      grid-template-columns: 1fr;
+      gap: 3rem;
+    }
+    
+    .hero h1 {
+      font-size: 2.5rem;
+    }
+    
+    .hero-terminal {
+      max-width: 100%;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .hero {
+      min-height: auto;
+      padding: 3rem 0;
+    }
+    
+    .hero h1 {
+      font-size: 2rem;
+    }
+    
+    .hero-subtitle {
+      font-size: 1rem;
+    }
+  }
+</style>

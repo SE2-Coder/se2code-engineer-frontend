@@ -1,0 +1,16 @@
+# Dependencias
+node_modules/
+
+# Archivos de entorno y secretos (¡CRUCIAL!)
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+.astro/
+
+# Logs y archivos temporales
+*.log
+npm-debug.log*
+.DS_Store

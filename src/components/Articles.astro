@@ -1,0 +1,187 @@
+---
+// Componente Articles - Lista de artículos con categorías
+interface Props {
+  posts: any[];
+  showCategory?: boolean;
+}
+
+const { posts, showCategory = true } = Astro.props;
+
+function formatearFecha(post) {
+  const fecha = post.fecha_publicacion;
+  if (!fecha) return 'Fecha no disponible';
+  
+  try {
+    const date = new Date(fecha);
+    if (isNaN(date.getTime())) return 'Fecha no disponible';
+    return date.toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } catch {
+    return 'Fecha no disponible';
+  }
+}
+---
+
+<section class="articles-section" id="articles">
+  <div class="container">
+    <div class="articles-grid">
+      {posts.map((post) => (
+        <article class="article-card">
+          {post.image && (
+            <div class="article-image">
+              <img 
+                src={`https://staging.se2code.engineer/assets/${post.image}`} 
+                alt={post.image_alt || post.title}
+                loading="lazy"
+              />
+            </div>
+          )}
+          
+          <div class="article-content">
+            {showCategory && post.category && (
+              <a href={`/${post.category}`} class="article-category">
+                {post.category}
+              </a>
+            )}
+            
+            <h3 class="article-title">
+              <a href={`/${post.slug}`}>{post.title}</a>
+            </h3>
+            
+            <p class="article-excerpt">{post.excerpt}</p>
+            
+            <div class="article-meta">
+              <time datetime={post.fecha_publicacion}>
+                {formatearFecha(post)}
+              </time>
+              <a href={`/${post.slug}`} class="read-more">Leer →</a>
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .articles-section {
+    padding: 4rem 0;
+  }
+
+  .articles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 2rem;
+  }
+
+  .article-card {
+    background: var(--bg-card, #1f1f23);
+    border: 1px solid var(--border, #27272a);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s;
+  }
+
+  .article-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--primary, #00ff88);
+    box-shadow: 0 10px 30px rgba(0, 255, 136, 0.1);
+  }
+
+  .article-image {
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+  }
+
+  .article-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+  }
+
+  .article-card:hover .article-image img {
+    transform: scale(1.05);
+  }
+
+  .article-content {
+    padding: 1.5rem;
+  }
+
+  .article-category {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: rgba(0, 255, 136, 0.1);
+    border: 1px solid var(--primary, #00ff88);
+    border-radius: 20px;
+    color: var(--primary, #00ff88);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 1rem;
+    transition: all 0.3s;
+  }
+
+  .article-category:hover {
+    background: var(--primary, #00ff88);
+    color: var(--bg, #0a0a0a);
+  }
+
+  .article-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    line-height: 1.3;
+  }
+
+  .article-title a {
+    color: var(--text, #e4e4e7);
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+
+  .article-title a:hover {
+    color: var(--primary, #00ff88);
+  }
+
+  .article-excerpt {
+    color: var(--text-light, #a1a1aa);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+
+  .article-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+    color: var(--text-light, #a1a1aa);
+  }
+
+  .read-more {
+    color: var(--primary, #00ff88);
+    font-weight: 600;
+    text-decoration: none;
+    transition: transform 0.3s;
+  }
+
+  .read-more:hover {
+    text-decoration: underline;
+  }
+
+  .article-card:hover .read-more {
+    transform: translateX(5px);
+  }
+
+  @media (max-width: 768px) {
+    .articles-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
